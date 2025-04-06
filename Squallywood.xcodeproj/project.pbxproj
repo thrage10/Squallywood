@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		7F1AF4F32DA2E866001FCA3F /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 7F1AF4F22DA2E866001FCA3F /* Supabase */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		7F1AF44B2DA1C11E001FCA3F /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +56,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7F1AF4F32DA2E866001FCA3F /* Supabase in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +117,7 @@
 			);
 			name = Squallywood;
 			packageProductDependencies = (
+				7F1AF4F22DA2E866001FCA3F /* Supabase */,
 			);
 			productName = Squallywood;
 			productReference = 7F1AF43D2DA1C11B001FCA3F /* Squallywood.app */;
@@ -195,6 +201,9 @@
 			);
 			mainGroup = 7F1AF4342DA1C11B001FCA3F;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				7F1AF4F12DA2E866001FCA3F /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 7F1AF43E2DA1C11B001FCA3F /* Products */;
 			projectDirPath = "";
@@ -550,6 +559,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		7F1AF4F12DA2E866001FCA3F /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase/supabase-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		7F1AF4F22DA2E866001FCA3F /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7F1AF4F12DA2E866001FCA3F /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 7F1AF4352DA1C11B001FCA3F /* Project object */;
 }
