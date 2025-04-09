@@ -9,16 +9,24 @@ import SwiftUI
 
 @main
 struct SquallywoodApp: App {
-    @State private var isLoggedIn: Bool = false // Track login state
+    @State private var userIsLoggedIn: Bool = false
 
     var body: some Scene {
         WindowGroup {
-            if isLoggedIn {
-                // Show TrailChecklistView if user is logged in
-                TrailChecklistView(isLoggedIn: $isLoggedIn)
+            if !userIsLoggedIn {
+                LoginSignupView(userIsLoggedIn: $userIsLoggedIn)
             } else {
-                // Show LoginSignupView if user is not logged in
-                LoginSignupView(isLoggedIn: $isLoggedIn)
+                TabView {
+                    TrailChecklistView(userIsLoggedIn: $userIsLoggedIn)
+                        .tabItem {
+                            Label("Completed Trails Checklist", systemImage: "checklist")
+                        }
+                    
+                    MapView()
+                        .tabItem {
+                            Label("Trail Navigation Map", systemImage: "map")
+                        }
+                }
             }
         }
     }
