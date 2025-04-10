@@ -160,22 +160,28 @@ struct LoginSignupView: View {
     }
 
     func attemptAuthentication(isSigningUp: Bool) async {
-        do {
-            if isSigningUp {
-                print("Attempting sign up for: \(userEmailAddress)")
-                let response = try await supabaseConnection.auth.signUp(email: userEmailAddress, password: "password")
-                print("Sign up successful")
-                handleAuthSuccess(response.user)
-            } else {
-                print("Attempting sign in for: \(userEmailAddress)")
-                let response = try await supabaseConnection.auth.signIn(email: userEmailAddress, password: "password")
-                print("Sign in successful")
-                handleAuthSuccess(response.user)
+        let maxRetries = 3
+        var currentRetry = 0
+        
+        while currentRetry < maxRetries {
+            do {
+                if isSigningUp {
+                    let response = try await supabaseConnection.auth.signUp(email: userEmailAddress, password: "password")
+                    handleAuthSuccess(response.user)
+                    return
+                } else {
+                    let response = try await supabaseConnection.auth.signIn(email: userEmailAddress, password: "password")
+                    handleAuthSuccess(response.user)
+                    return
+                }
+            } catch {
+                currentRetry += 1
+                if currentRetry == maxRetries {
+                    handleAuthError(error, action: isSigningUp ? "sign up" : "log in")
+                    return
+                }
+                try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second delay between retries
             }
-        } catch let error {
-            let actionText = isSigningUp ? "sign up" : "log in"
-            print("Failed to \(actionText): \(error.localizedDescription)")
-            handleAuthError(error, action: actionText)
         }
     }
 
