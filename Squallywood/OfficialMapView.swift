@@ -9,11 +9,7 @@ import SwiftUI
 
 struct OfficialMapView: View {
     var body: some View {
-        ScrollView {
-            Image("OfficialTrailMap")
-                .resizable()
-                .scaledToFit()
-        }
+        OfficialTrailMapUIImage()
     }
 }
 

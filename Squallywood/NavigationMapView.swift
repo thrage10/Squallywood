@@ -145,10 +145,8 @@ struct NavigationMapView: View {
                         .padding()
                 }
                 
-                Image("OfficialTrailMap")
-                    .resizable()
-                    .scaledToFit()
-                    .padding(.top)
+                OfficialTrailMapUIImage()
+                    .frame(height: UIScreen.main.bounds.height * 0.6)
             }
         }
         .onAppear {

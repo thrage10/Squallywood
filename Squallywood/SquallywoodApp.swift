@@ -26,6 +26,11 @@ struct SquallywoodApp: App {
                         .tabItem {
                             Label("Trail Navigation Map", systemImage: "map")
                         }
+                    
+                    SquallywoodRegionEditorView()
+                        .tabItem {
+                            Label("Region Editor", systemImage: "pencil.circle")
+                        }
                 }
             }
         }
