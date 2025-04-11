@@ -14,6 +14,9 @@ struct SquallywoodMapView: View {
     @State private var offset: CGSize = .zero
     @State private var lastOffset: CGSize = .zero
     
+    // Single coordinate scale factor to adjust
+    private let coordinateScale: CGFloat = 4.4  // Adjust this number to find the perfect fit
+    
     // Define colors for the regions
     let regionColors: [Color] = [
         .red.opacity(0.3),
@@ -21,9 +24,10 @@ struct SquallywoodMapView: View {
         .green.opacity(0.3),
         .orange.opacity(0.3),
         .purple.opacity(0.3),
-        .pink.opacity(0.3),
+        .cyan.opacity(0.3),
         .yellow.opacity(0.3),
-        .cyan.opacity(0.3)
+        .red.opacity(0.3),
+        .gray.opacity(0.3)
     ]
     
     var body: some View {
@@ -43,40 +47,104 @@ struct SquallywoodMapView: View {
                             .frame(width: containerWidth, height: containerHeight)
                             .scaleEffect(scale)
                             .offset(offset)
-                        
-                        // Regions
-                        ForEach(Array(squallywoodRegions.enumerated()), id: \.element.id) { index, region in
-                            let color = regionColors[index % regionColors.count]
                             
-                            RegionShape(points: region.points, imageSize: imageSize, containerSize: CGSize(width: containerWidth, height: containerHeight))
+                        
+                        // Container for all regions
+                        ZStack {
+                            // Regions
+                            ForEach(Array(squallywoodRegions.enumerated()), id: \.element.id) { index, region in
+                                let color = regionColors[index % regionColors.count]
+                                
+                                Path { path in
+                                    guard let firstPoint = region.points.first else { return }
+                                    
+                                    let scaleX = containerWidth / imageSize.width
+                                    
+                                    let scaledFirst = CGPoint(
+                                        x: firstPoint.x * coordinateScale * scaleX,
+                                        y: firstPoint.y * coordinateScale * scaleX
+                                    )
+                                    
+                                    path.move(to: scaledFirst)
+                                    
+                                    for point in region.points.dropFirst() {
+                                        let scaledPoint = CGPoint(
+                                            x: point.x * coordinateScale * scaleX,
+                                            y: point.y * coordinateScale * scaleX
+                                        )
+                                        path.addLine(to: scaledPoint)
+                                    }
+                                    
+                                    path.closeSubpath()
+                                }
                                 .fill(color)
                                 .overlay(
-                                    RegionShape(points: region.points, imageSize: imageSize, containerSize: CGSize(width: containerWidth, height: containerHeight))
-                                        .stroke(color.opacity(0.8), lineWidth: 2)
+                                    Path { path in
+                                        guard let firstPoint = region.points.first else { return }
+                                        let scaleX = containerWidth / imageSize.width
+                                        
+                                        let scaledFirst = CGPoint(
+                                            x: firstPoint.x * coordinateScale * scaleX,
+                                            y: firstPoint.y * coordinateScale * scaleX
+                                        )
+                                        path.move(to: scaledFirst)
+                                        
+                                        for point in region.points.dropFirst() {
+                                            let scaledPoint = CGPoint(
+                                                x: point.x * coordinateScale * scaleX,
+                                                y: point.y * coordinateScale * scaleX
+                                            )
+                                            path.addLine(to: scaledPoint)
+                                        }
+                                        path.closeSubpath()
+                                    }
+                                    .stroke(color.opacity(0.8), lineWidth: 2)
                                 )
-                                .scaleEffect(scale)
-                                .offset(offset)
+                                .contentShape(Path { path in
+                                    guard let firstPoint = region.points.first else { return }
+                                    let scaleX = containerWidth / imageSize.width
+                                    
+                                    let scaledFirst = CGPoint(
+                                        x: firstPoint.x * coordinateScale * scaleX,
+                                        y: firstPoint.y * coordinateScale * scaleX
+                                    )
+                                    path.move(to: scaledFirst)
+                                    
+                                    for point in region.points.dropFirst() {
+                                        let scaledPoint = CGPoint(
+                                            x: point.x * coordinateScale * scaleX,
+                                            y: point.y * coordinateScale * scaleX
+                                        )
+                                        path.addLine(to: scaledPoint)
+                                    }
+                                    path.closeSubpath()
+                                })
                                 .onTapGesture {
                                     print("Tapped region: \(region.id)")
                                 }
-                            
-                            if let centerPoint = calculateRegionCenter(points: region.points) {
-                                let scaledCenter = CGPoint(
-                                    x: centerPoint.x * (containerWidth / imageSize.width) * scale + offset.width,
-                                    y: centerPoint.y * (containerWidth / imageSize.width) * scale + offset.height
-                                )
                                 
-                                Text(region.id)
-                                    .font(.caption)
-                                    .foregroundColor(.white)
-                                    .padding(4)
-                                    .background(color.opacity(0.8))
-                                    .cornerRadius(4)
-                                    .position(scaledCenter)
+                                // Region label
+                                if let centerPoint = calculateRegionCenter(points: region.points) {
+                                    let scaleX = containerWidth / imageSize.width
+                                    let scaledCenter = CGPoint(
+                                        x: centerPoint.x * coordinateScale * scaleX,
+                                        y: centerPoint.y * coordinateScale * scaleX
+                                    )
+                                    
+                                    Text(region.id)
+                                        .font(.caption)
+                                        .foregroundColor(.white)
+                                        .padding(4)
+                                        .background(color.opacity(0.8))
+                                        .cornerRadius(4)
+                                        .position(scaledCenter)
+                                }
                             }
                         }
+                        .scaleEffect(scale)
+                        .offset(offset)
                     }
-                    .frame(width: geometry.size.width, height: geometry.size.height)
+                    .frame(width: containerWidth, height: containerHeight)
                     .gesture(
                         SimultaneousGesture(
                             MagnificationGesture()
