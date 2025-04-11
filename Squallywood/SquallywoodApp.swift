@@ -13,9 +13,9 @@ struct SquallywoodApp: App {
 
     var body: some Scene {
         WindowGroup {
-            //if !userIsLoggedIn {
-            //    LoginSignupView(userIsLoggedIn: $userIsLoggedIn)
-            //} else {
+            if !userIsLoggedIn {
+                LoginSignupView(userIsLoggedIn: $userIsLoggedIn)
+            } else {
                 TabView {
                     TrailChecklistView(userIsLoggedIn: $userIsLoggedIn)
                         .tabItem {
@@ -27,12 +27,13 @@ struct SquallywoodApp: App {
                             Label("Trail Navigation Map", systemImage: "map")
                         }
                     
-                    SquallywoodRegionEditorView()
-                        .tabItem {
-                            Label("Region Editor", systemImage: "pencil.circle")
-                        }
+                    // Commenting out the region editor for live version
+                    //SquallywoodRegionEditorView()
+                    //    .tabItem {
+                    //        Label("Region Editor", systemImage: "pencil.circle")
+                    //    }
                 }
-           // }
+            }
         }
     }
 }

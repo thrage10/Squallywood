@@ -8,11 +8,22 @@
 import SwiftUI
 
 struct SquallywoodMapView: View {
+    struct SelectedRegion: Identifiable {
+        let id: String
+        let name: String
+        
+        init(_ regionId: String) {
+            self.id = regionId
+            self.name = regionId // or any other name mapping you want
+        }
+    }
+    
     @State private var squallywoodRegions: [SquallywoodRegion] = []
     @State private var scale: CGFloat = 1.0
     @State private var lastScale: CGFloat = 1.0
     @State private var offset: CGSize = .zero
     @State private var lastOffset: CGSize = .zero
+    @State private var selectedRegion: SelectedRegion?
     
     // Single coordinate scale factor to adjust
     private let coordinateScale: CGFloat = 4.4  // Adjust this number to find the perfect fit
@@ -82,7 +93,7 @@ struct SquallywoodMapView: View {
                                         Color.clear
                                             .contentShape(regionPath)
                                             .onTapGesture {
-                                                print("Tapped region: \(region.id)")
+                                                selectedRegion = SelectedRegion(region.id)
                                             }
                                         
                                         if let centerPoint = calculateRegionCenter(points: region.points) {
@@ -145,7 +156,7 @@ struct SquallywoodMapView: View {
                 ], spacing: 8) {
                     ForEach(Array(squallywoodRegions.enumerated()), id: \.element.id) { index, region in
                         Button(action: {
-                            print("Tapped region: \(region.id)")
+                            selectedRegion = SelectedRegion(region.id)
                         }) {
                             Text(region.id)
                                 .font(.caption)
@@ -167,6 +178,9 @@ struct SquallywoodMapView: View {
         }
         .onAppear {
             squallywoodRegions = loadSquallywoodRegionsFromJSON()
+        }
+        .sheet(item: $selectedRegion) { region in
+            PhotoReelView(regionId: region.id)
         }
     }
     
