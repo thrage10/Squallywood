@@ -31,153 +31,139 @@ struct SquallywoodMapView: View {
     ]
     
     var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                if let mapImage = UIImage(named: "OfficialBlank") {
-                    let imageSize = mapImage.size
-                    let aspectRatio = imageSize.width / imageSize.height
-                    let containerWidth = geometry.size.width
-                    let containerHeight = containerWidth / aspectRatio
-                    
-                    ZStack {
-                        // Base map
-                        Image(uiImage: mapImage)
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: containerWidth, height: containerHeight)
-                            .scaleEffect(scale)
-                            .offset(offset)
-                            
+        VStack(spacing: 0) {
+            GeometryReader { geometry in
+                ZStack {
+                    if let mapImage = UIImage(named: "OfficialBlank") {
+                        let imageSize = mapImage.size
+                        let aspectRatio = imageSize.width / imageSize.height
+                        let containerWidth = geometry.size.width
+                        let containerHeight = containerWidth / aspectRatio
                         
-                        // Container for all regions
                         ZStack {
-                            // Regions
-                            ForEach(Array(squallywoodRegions.enumerated()), id: \.element.id) { index, region in
-                                let color = regionColors[index % regionColors.count]
+                            Image(uiImage: mapImage)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: containerWidth, height: containerHeight)
+                                .scaleEffect(scale)
+                                .offset(offset)
                                 
-                                Path { path in
-                                    guard let firstPoint = region.points.first else { return }
-                                    
+                        
+                            // Container for all regions
+                            ZStack {
+                                // Regions
+                                ForEach(Array(squallywoodRegions.enumerated()), id: \.element.id) { index, region in
+                                    let color = regionColors[index % regionColors.count]
                                     let scaleX = containerWidth / imageSize.width
                                     
-                                    let scaledFirst = CGPoint(
-                                        x: firstPoint.x * coordinateScale * scaleX,
-                                        y: firstPoint.y * coordinateScale * scaleX
-                                    )
-                                    
-                                    path.move(to: scaledFirst)
-                                    
-                                    for point in region.points.dropFirst() {
-                                        let scaledPoint = CGPoint(
-                                            x: point.x * coordinateScale * scaleX,
-                                            y: point.y * coordinateScale * scaleX
-                                        )
-                                        path.addLine(to: scaledPoint)
-                                    }
-                                    
-                                    path.closeSubpath()
-                                }
-                                .fill(color)
-                                .overlay(
-                                    Path { path in
-                                        guard let firstPoint = region.points.first else { return }
-                                        let scaleX = containerWidth / imageSize.width
-                                        
-                                        let scaledFirst = CGPoint(
-                                            x: firstPoint.x * coordinateScale * scaleX,
-                                            y: firstPoint.y * coordinateScale * scaleX
-                                        )
-                                        path.move(to: scaledFirst)
-                                        
-                                        for point in region.points.dropFirst() {
-                                            let scaledPoint = CGPoint(
-                                                x: point.x * coordinateScale * scaleX,
-                                                y: point.y * coordinateScale * scaleX
+                                    Group {
+                                        let regionPath = Path { path in
+                                            guard let firstPoint = region.points.first else { return }
+                                            
+                                            let scaledFirst = CGPoint(
+                                                x: firstPoint.x * coordinateScale * scaleX,
+                                                y: firstPoint.y * coordinateScale * scaleX
                                             )
-                                            path.addLine(to: scaledPoint)
+                                            path.move(to: scaledFirst)
+                                            
+                                            for point in region.points.dropFirst() {
+                                                let scaledPoint = CGPoint(
+                                                    x: point.x * coordinateScale * scaleX,
+                                                    y: point.y * coordinateScale * scaleX
+                                                )
+                                                path.addLine(to: scaledPoint)
+                                            }
+                                            path.closeSubpath()
                                         }
-                                        path.closeSubpath()
+                                        
+                                        regionPath.fill(color)
+                                        regionPath.stroke(color.opacity(0.8), lineWidth: 2)
+                                        
+                                        Color.clear
+                                            .contentShape(regionPath)
+                                            .onTapGesture {
+                                                print("Tapped region: \(region.id)")
+                                            }
+                                        
+                                        if let centerPoint = calculateRegionCenter(points: region.points) {
+                                            let scaledCenter = CGPoint(
+                                                x: centerPoint.x * coordinateScale * scaleX,
+                                                y: centerPoint.y * coordinateScale * scaleX
+                                            )
+                                            
+                                            Text(region.id)
+                                                .font(.caption)
+                                                .foregroundColor(.white)
+                                                .padding(4)
+                                                .background(color.opacity(0.8))
+                                                .cornerRadius(4)
+                                                .position(scaledCenter)
+                                        }
                                     }
-                                    .stroke(color.opacity(0.8), lineWidth: 2)
-                                )
-                                .contentShape(Path { path in
-                                    guard let firstPoint = region.points.first else { return }
-                                    let scaleX = containerWidth / imageSize.width
-                                    
-                                    let scaledFirst = CGPoint(
-                                        x: firstPoint.x * coordinateScale * scaleX,
-                                        y: firstPoint.y * coordinateScale * scaleX
-                                    )
-                                    path.move(to: scaledFirst)
-                                    
-                                    for point in region.points.dropFirst() {
-                                        let scaledPoint = CGPoint(
-                                            x: point.x * coordinateScale * scaleX,
-                                            y: point.y * coordinateScale * scaleX
-                                        )
-                                        path.addLine(to: scaledPoint)
-                                    }
-                                    path.closeSubpath()
-                                })
-                                .onTapGesture {
-                                    print("Tapped region: \(region.id)")
-                                }
-                                
-                                // Region label
-                                if let centerPoint = calculateRegionCenter(points: region.points) {
-                                    let scaleX = containerWidth / imageSize.width
-                                    let scaledCenter = CGPoint(
-                                        x: centerPoint.x * coordinateScale * scaleX,
-                                        y: centerPoint.y * coordinateScale * scaleX
-                                    )
-                                    
-                                    Text(region.id)
-                                        .font(.caption)
-                                        .foregroundColor(.white)
-                                        .padding(4)
-                                        .background(color.opacity(0.8))
-                                        .cornerRadius(4)
-                                        .position(scaledCenter)
                                 }
                             }
+                            .scaleEffect(scale)
+                            .offset(offset)
                         }
-                        .scaleEffect(scale)
-                        .offset(offset)
-                    }
-                    .frame(width: containerWidth, height: containerHeight)
-                    .gesture(
-                        SimultaneousGesture(
-                            MagnificationGesture()
-                                .onChanged { value in
-                                    let delta = value / lastScale
-                                    lastScale = value
-                                    scale = min(max(scale * delta, 1), 4)
-                                }
-                                .onEnded { _ in
-                                    lastScale = 1.0
-                                },
-                            DragGesture()
-                                .onChanged { value in
-                                    let delta = CGSize(
-                                        width: value.translation.width - lastOffset.width,
-                                        height: value.translation.height - lastOffset.height
-                                    )
-                                    lastOffset = value.translation
-                                    offset = CGSize(
-                                        width: offset.width + delta.width,
-                                        height: offset.height + delta.height
-                                    )
-                                }
-                                .onEnded { _ in
-                                    lastOffset = .zero
-                                }
+                        .frame(width: containerWidth, height: containerHeight)
+                        .gesture(
+                            SimultaneousGesture(
+                                MagnificationGesture()
+                                    .onChanged { value in
+                                        let delta = value / lastScale
+                                        lastScale = value
+                                        scale = min(max(scale * delta, 1), 4)
+                                    }
+                                    .onEnded { _ in
+                                        lastScale = 1.0
+                                    },
+                                DragGesture()
+                                    .onChanged { value in
+                                        let delta = CGSize(
+                                            width: value.translation.width - lastOffset.width,
+                                            height: value.translation.height - lastOffset.height
+                                        )
+                                        lastOffset = value.translation
+                                        offset = CGSize(
+                                            width: offset.width + delta.width,
+                                            height: offset.height + delta.height
+                                        )
+                                    }
+                                    .onEnded { _ in
+                                        lastOffset = .zero
+                                    }
+                            )
                         )
-                    )
-                } else {
-                    Text("Blank map image not found")
-                        .foregroundColor(.red)
+                    }
                 }
             }
+            
+            ScrollView {
+                LazyVGrid(columns: [
+                    GridItem(.flexible()),
+                    GridItem(.flexible())
+                ], spacing: 8) {
+                    ForEach(Array(squallywoodRegions.enumerated()), id: \.element.id) { index, region in
+                        Button(action: {
+                            print("Tapped region: \(region.id)")
+                        }) {
+                            Text(region.id)
+                                .font(.caption)
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(regionColors[index % regionColors.count])
+                                )
+                        }
+                    }
+                }
+                .padding()
+            }
+            .frame(maxHeight: 200) // Limit the height of the key area
+            .background(Color(.systemGray6))
         }
         .onAppear {
             squallywoodRegions = loadSquallywoodRegionsFromJSON()
