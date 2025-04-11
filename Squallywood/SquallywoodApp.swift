@@ -13,9 +13,9 @@ struct SquallywoodApp: App {
 
     var body: some Scene {
         WindowGroup {
-            if !userIsLoggedIn {
-                LoginSignupView(userIsLoggedIn: $userIsLoggedIn)
-            } else {
+            //if !userIsLoggedIn {
+            //    LoginSignupView(userIsLoggedIn: $userIsLoggedIn)
+            //} else {
                 TabView {
                     TrailChecklistView(userIsLoggedIn: $userIsLoggedIn)
                         .tabItem {
@@ -32,7 +32,7 @@ struct SquallywoodApp: App {
                             Label("Region Editor", systemImage: "pencil.circle")
                         }
                 }
-            }
+           // }
         }
     }
 }
