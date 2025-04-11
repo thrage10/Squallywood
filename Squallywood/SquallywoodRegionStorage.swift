@@ -1,6 +1,7 @@
 import Foundation
+import UIKit
 
-func getSquallywoodRegionsFileURL() -> URL {
+private func getSquallywoodRegionsFileURL() -> URL {
     let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
     return documentsDirectory.appendingPathComponent("SquallywoodRegions.json")
 }
@@ -19,11 +20,17 @@ func saveSquallywoodRegionsToJSON(_ regions: [SquallywoodRegion]) {
 }
 
 func loadSquallywoodRegionsFromJSON() -> [SquallywoodRegion] {
-    guard let bundledRegionsURL = Bundle.main.url(forResource: "SquallywoodRegions", withExtension: "json", subdirectory: "SquallywoodRegions.dataset"),
-          let data = try? Data(contentsOf: bundledRegionsURL),
-          let regions = try? JSONDecoder().decode([SquallywoodRegion].self, from: data) else {
-        print("⚠️ Could not load regions from assets")
-        return []
+    // Load from asset catalog dataset
+    if let asset = NSDataAsset(name: "SquallywoodRegions") {
+        do {
+            let regions = try JSONDecoder().decode([SquallywoodRegion].self, from: asset.data)
+            print("✅ Successfully loaded \(regions.count) regions from assets")
+            return regions
+        } catch let decodingError {
+            print("⚠️ Error decoding regions: \(decodingError)")
+        }
+    } else {
+        print("⚠️ Could not find SquallywoodRegions dataset in assets")
     }
-    return regions
+    return []
 }
