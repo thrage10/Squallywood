@@ -4,6 +4,7 @@ import Supabase
 
 struct MapView: View {
     @Binding var userIsLoggedIn: Bool
+    @ObservedObject var checklistStore: TrailChecklistStore
     @State private var selectedTab = 0
 
     var body: some View {
@@ -11,7 +12,7 @@ struct MapView: View {
             VStack(spacing: 0) {
                 Group {
                     if selectedTab == 0 {
-                        OfficialTabView(userIsLoggedIn: $userIsLoggedIn)
+                        OfficialTabView(userIsLoggedIn: $userIsLoggedIn, store: checklistStore)
                     } else if selectedTab == 1 {
                         NavigationMapView()
                     } else {
@@ -53,16 +54,8 @@ struct MapView: View {
 
 struct OfficialTabView: View {
     @Binding var userIsLoggedIn: Bool
-    @State private var completedTrailsList: [CompletedTrailEntry] = []
-    @State private var currentLoggedInUser: User? = nil
-    @State private var availableSkiTrails: [String] = []
+    @ObservedObject var store: TrailChecklistStore
     @State private var selectedTrailToAdd: String = ""
-    @State private var checklistErrorMessage: String? = nil
-
-    let supabaseConnection = SupabaseClient(
-        supabaseURL: URL(string: "https://qklbeoadcidyasmuerjv.supabase.co")!,
-        supabaseKey: "sb_publishable_3Q8l1ko8VIC5bXOfEoPgew_wHx-wKnj"
-    )
 
     var body: some View {
         GeometryReader { geo in
@@ -78,15 +71,15 @@ struct OfficialTabView: View {
                 if userIsLoggedIn {
                     VStack(spacing: 0) {
                         List {
-                            if completedTrailsList.isEmpty {
+                            if store.completedTrailsList.isEmpty {
                                 Text("No completed trails yet. Add some!")
                                     .foregroundColor(.secondary)
                             } else {
-                                ForEach(completedTrailsList) { trail in
+                                ForEach(store.completedTrailsList) { trail in
                                     Text(trail.completedTrailName)
                                         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                                             Button(role: .destructive) {
-                                                deleteTrail(trail: trail)
+                                                store.deleteTrail(trail)
                                             } label: {
                                                 Label("Delete", systemImage: "trash")
                                             }
@@ -100,22 +93,27 @@ struct OfficialTabView: View {
                             HStack {
                                 Picker("Select Trail", selection: $selectedTrailToAdd) {
                                     Text("Select a trail").tag("")
-                                    ForEach(availableSkiTrails, id: \.self) { trail in
+                                    ForEach(store.availableSkiTrails, id: \.self) { trail in
                                         Text(trail).tag(trail)
                                     }
                                 }
                                 .pickerStyle(MenuPickerStyle())
 
-                                Button(action: addTrail) {
-                                    Image(systemName: "plus")
-                                        .padding()
+                                Button {
+                                    let name = selectedTrailToAdd
+                                    Task {
+                                        let success = await store.addTrail(named: name)
+                                        if success { selectedTrailToAdd = "" }
+                                    }
+                                } label: {
+                                    Image(systemName: "plus").padding()
                                 }
                                 .disabled(selectedTrailToAdd.isEmpty)
                             }
                             .padding(.horizontal)
                             .padding(.vertical, 8)
 
-                            if let errorMessage = checklistErrorMessage {
+                            if let errorMessage = store.errorMessage {
                                 Text(errorMessage)
                                     .foregroundColor(.red)
                                     .font(.caption)
@@ -123,7 +121,10 @@ struct OfficialTabView: View {
                             }
 
                             Button("Log Out") {
-                                logout()
+                                Task {
+                                    await store.logout()
+                                    userIsLoggedIn = false
+                                }
                             }
                             .padding(.bottom, 8)
                         }
@@ -131,149 +132,6 @@ struct OfficialTabView: View {
                     .frame(height: geo.size.height * 0.5 - 1)
                 }
             }
-        }
-        .onAppear {
-            checkLoggedInUser()
-            fetchAvailableTrails()
-        }
-    }
-
-    func fetchAvailableTrails() {
-        Task {
-            do {
-                let response = try await supabaseConnection.from("All_Trails")
-                    .select("trail_name")
-                    .execute()
-
-                struct AvailableTrailResponse: Codable {
-                    let trail_name: String
-                }
-
-                let trails = try JSONDecoder().decode([AvailableTrailResponse].self, from: response.data)
-                await MainActor.run {
-                    self.availableSkiTrails = trails.map { $0.trail_name }.sorted()
-                }
-            } catch {
-                print("Error fetching available trails: \(error)")
-            }
-        }
-    }
-
-    func checkLoggedInUser() {
-        Task {
-            do {
-                let user = try await supabaseConnection.auth.user()
-                await MainActor.run {
-                    self.currentLoggedInUser = user
-                    if !self.userIsLoggedIn { self.userIsLoggedIn = true }
-                }
-                await fetchTrails()
-            } catch {
-                await MainActor.run {
-                    self.currentLoggedInUser = nil
-                    self.userIsLoggedIn = false
-                    self.completedTrailsList = []
-                }
-            }
-        }
-    }
-
-    func logout() {
-        Task {
-            do {
-                try await supabaseConnection.auth.signOut()
-                await MainActor.run {
-                    self.userIsLoggedIn = false
-                    self.currentLoggedInUser = nil
-                    self.completedTrailsList = []
-                    self.selectedTrailToAdd = ""
-                    self.availableSkiTrails = []
-                    self.checklistErrorMessage = nil
-                }
-            } catch {
-                print("Error logging out: \(error)")
-            }
-        }
-    }
-
-    func addTrail() {
-        Task { await addTrailAsync() }
-    }
-
-    func addTrailAsync() async {
-        guard let userId = currentLoggedInUser?.id else { return }
-
-        if completedTrailsList.contains(where: { $0.completedTrailId == userId }) {
-            await MainActor.run {
-                checklistErrorMessage = "This trail is already logged as completed"
-                Task {
-                    try? await Task.sleep(nanoseconds: 1_000_000_000)
-                    await MainActor.run { checklistErrorMessage = nil }
-                }
-            }
-            return
-        }
-
-        let trailData: [String: String] = [
-            "trail_name": selectedTrailToAdd,
-            "user_id": userId.uuidString
-        ]
-
-        do {
-            let response = try await supabaseConnection.from("Completed_Trails")
-                .insert(trailData)
-                .select()
-                .single()
-                .execute()
-
-            let newTrailResponse = try JSONDecoder().decode(CompletedTrailDatabaseResponse.self, from: response.data)
-            await MainActor.run {
-                self.completedTrailsList.append(newTrailResponse.toCompletedTrailEntry())
-                selectedTrailToAdd = ""
-                checklistErrorMessage = nil
-            }
-        } catch {
-            await MainActor.run {
-                checklistErrorMessage = "Error adding trail: \(error.localizedDescription)"
-            }
-        }
-    }
-
-    func deleteTrail(trail: CompletedTrailEntry) {
-        Task {
-            do {
-                _ = try await supabaseConnection.from("Completed_Trails")
-                    .delete()
-                    .eq("id", value: trail.completedTrailId)
-                    .execute()
-                await MainActor.run {
-                    completedTrailsList.removeAll { $0.completedTrailId == trail.completedTrailId }
-                }
-            } catch {
-                await MainActor.run {
-                    checklistErrorMessage = "Error deleting trail: \(error.localizedDescription)"
-                    Task {
-                        try? await Task.sleep(nanoseconds: 3_000_000_000)
-                        await MainActor.run { checklistErrorMessage = nil }
-                    }
-                }
-            }
-        }
-    }
-
-    func fetchTrails() async {
-        guard let userId = currentLoggedInUser?.id else { return }
-        do {
-            let response = try await supabaseConnection.from("Completed_Trails")
-                .select()
-                .eq("user_id", value: userId)
-                .execute()
-            let trailResponses = try JSONDecoder().decode([CompletedTrailDatabaseResponse].self, from: response.data)
-            await MainActor.run {
-                self.completedTrailsList = trailResponses.map { $0.toCompletedTrailEntry() }
-            }
-        } catch {
-            await MainActor.run { self.completedTrailsList = [] }
         }
     }
 }
@@ -476,5 +334,5 @@ struct NavigationTrailMapImage: View {
 }
 
 #Preview {
-    MapView(userIsLoggedIn: .constant(true))
+    MapView(userIsLoggedIn: .constant(true), checklistStore: TrailChecklistStore())
 }
