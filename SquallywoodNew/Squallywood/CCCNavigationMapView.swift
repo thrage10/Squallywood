@@ -77,77 +77,70 @@ struct NavigationMapView: View {
     )
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                VStack(alignment: .leading) {
-                    Text("From:")
-                        .font(.headline)
-                    Picker("From Trail", selection: $selectedStartingTrail) {
-                        Text("Select starting trail").tag("")
-                        ForEach(availableSkiTrails, id: \.self) { trail in
-                            Text(trail).tag(trail)
+        VStack(spacing: 0) {
+            // Fixed compact header
+            VStack(spacing: 6) {
+                HStack(spacing: 8) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("From").font(.caption).foregroundColor(.secondary)
+                        Picker("", selection: $selectedStartingTrail) {
+                            Text("Select").tag("")
+                            ForEach(availableSkiTrails, id: \.self) { Text($0).tag($0) }
                         }
+                        .pickerStyle(MenuPickerStyle())
+                        .background(RoundedRectangle(cornerRadius: 6).fill(Color(.systemGray6)))
                     }
-                    .pickerStyle(MenuPickerStyle())
-                    .padding()
-                    .background(RoundedRectangle(cornerRadius: 8).fill(Color(.systemGray6)))
-                }
-                .padding(.horizontal)
-                
-                VStack(alignment: .leading) {
-                    Text("To:")
-                        .font(.headline)
-                    Picker("To Trail", selection: $selectedDestinationTrail) {
-                        Text("Select destination trail").tag("")
-                        ForEach(availableSkiTrails, id: \.self) { trail in
-                            Text(trail).tag(trail)
+                    .frame(maxWidth: .infinity)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("To").font(.caption).foregroundColor(.secondary)
+                        Picker("", selection: $selectedDestinationTrail) {
+                            Text("Select").tag("")
+                            ForEach(availableSkiTrails, id: \.self) { Text($0).tag($0) }
                         }
+                        .pickerStyle(MenuPickerStyle())
+                        .background(RoundedRectangle(cornerRadius: 6).fill(Color(.systemGray6)))
                     }
-                    .pickerStyle(MenuPickerStyle())
-                    .padding()
-                    .background(RoundedRectangle(cornerRadius: 8).fill(Color(.systemGray6)))
+                    .frame(maxWidth: .infinity)
+
+                    Button(action: findPath) {
+                        Text("Go")
+                            .font(.subheadline.bold())
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                            .background(RoundedRectangle(cornerRadius: 8).fill(Color.blue))
+                    }
+                    .disabled(selectedStartingTrail.isEmpty || selectedDestinationTrail.isEmpty)
                 }
-                .padding(.horizontal)
-                
-                Button(action: findPath) {
-                    Text("Go")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(RoundedRectangle(cornerRadius: 10).fill(Color.blue))
-                }
-                .padding(.horizontal)
-                .disabled(selectedStartingTrail.isEmpty || selectedDestinationTrail.isEmpty)
-                
+
                 if let calculatedRoute = calculatedRoute {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Route:")
-                            .font(.headline)
-                        ForEach(Array(calculatedRoute.enumerated()), id: \.offset) { index, trail in
-                            HStack {
-                                Text("\(index + 1).")
-                                Text(trail)
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 4) {
+                            ForEach(Array(calculatedRoute.enumerated()), id: \.offset) { index, trail in
+                                Text(trail).font(.caption2)
                                 if index < calculatedRoute.count - 1 {
-                                    Image(systemName: "arrow.down")
+                                    Image(systemName: "chevron.right")
+                                        .font(.caption2)
+                                        .foregroundColor(.secondary)
                                 }
                             }
                         }
                     }
-                    .padding()
-                    .background(RoundedRectangle(cornerRadius: 8).fill(Color(.systemGray6)))
-                    .padding(.horizontal)
                 }
-                
+
                 if let errorMessage = navigationErrorMessage {
-                    Text(errorMessage)
-                        .foregroundColor(.red)
-                        .padding()
+                    Text(errorMessage).font(.caption).foregroundColor(.red)
                 }
-                
-                OfficialTrailMapUIImage()
-                    .frame(height: UIScreen.main.bounds.height * 0.6)
             }
+            .padding(.horizontal)
+            .padding(.vertical, 8)
+            .background(Color(.systemBackground))
+
+            Divider()
+
+            NavigationTrailMapImage()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .onAppear {
             fetchTrailData()

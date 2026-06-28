@@ -16,24 +16,7 @@ struct SquallywoodApp: App {
             if !userIsLoggedIn {
                 LoginSignupView(userIsLoggedIn: $userIsLoggedIn)
             } else {
-                TabView {
-                    TrailChecklistView(userIsLoggedIn: $userIsLoggedIn)
-                        .tabItem {
-                            Label("Completed Trails Checklist", systemImage: "checklist")
-                        }
-                    
-                    MapView()
-                        .tabItem {
-                            Label("Trail Navigation Map", systemImage: "map")
-                        }
-                    
-                    // Commenting out the region editor for live version
-                    //SquallywoodRegionEditorView()
-                    //    .tabItem {
-                    //        Label("Region Editor", systemImage: "pencil.circle")
-                    //    }
-                    // test
-                }
+                MapView(userIsLoggedIn: $userIsLoggedIn)
             }
         }
     }
